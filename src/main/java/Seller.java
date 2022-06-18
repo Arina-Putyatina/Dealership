@@ -4,6 +4,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Seller {
 
+    static final int WAIT_TIME = 1000;
+
     private final Dealership dealership;
     private final Lock lock;
     private final Condition condition;
@@ -16,49 +18,52 @@ public class Seller {
     }
 
     public void receiveCar() {
-        try {
-            lock.lock();
-            System.out.printf("%s выпустил 1 авто \n", Thread.currentThread().getName());
-            int timeAcceptance = 200;
-            Thread.sleep(timeAcceptance);
-            dealership.getCars().add(new Car());
-            condition.signal();
-        } catch (InterruptedException | IllegalMonitorStateException ex) {
-            ex.printStackTrace();
-        } finally {
-            lock.unlock();
+        int needSell = dealership.getNeedSell();
+        while (dealership.getSold() < needSell) {
+            try {
+                lock.lock();
+                System.out.printf("%s выпустил 1 авто \n", Thread.currentThread().getName());
+                dealership.getCars().add(new Car());
+                condition.signalAll();
+            } catch (IllegalMonitorStateException ex) {
+                ex.printStackTrace();
+            } finally {
+                lock.unlock();
+            }
+            try {
+                Thread.sleep(WAIT_TIME);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
         }
-
     }
 
     public Car sellCar() {
 
         try {
             if (Thread.currentThread().isInterrupted()) {
-                throw new InterruptedException();
+                return null;
             }
-            try {
-                lock.lock();
-                System.out.printf("%s зашел в салон\n", Thread.currentThread().getName());
-                while (dealership.getCars().size() == 0 && !Thread.currentThread().isInterrupted()) {
-                    System.out.println("Машин нет");
-                    int waitTime = 400;
-                    condition.wait(waitTime);
-                }
-                int timeSale = 300;
-                Thread.sleep(timeSale);
+            int needSell = dealership.getNeedSell();
+            lock.lock();
+            System.out.printf("%s зашел в салон\n", Thread.currentThread().getName());
+            while (dealership.getCars().size() == 0 && !Thread.currentThread().isInterrupted() && dealership.getSold() < needSell) {
+                System.out.println("Машин нет");
+                condition.await();
+            }
+            if (dealership.getCars().size() > 0) {
                 System.out.printf("%s купил машину\n", Thread.currentThread().getName());
                 dealership.addSold();
                 return dealership.getCars().remove(0);
-
-            } catch (InterruptedException | IllegalMonitorStateException ex) {
+            } else {
+                System.out.println("Машин нет");
                 return null;
-            } finally {
-                lock.unlock();
             }
 
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | IllegalMonitorStateException ex) {
             return null;
+        } finally {
+            lock.unlock();
         }
     }
 }
