@@ -51,12 +51,12 @@ public class Seller {
                 System.out.println("Машин нет");
                 condition.await();
             }
-            if (dealership.getCars().size() > 0) {
+            if (dealership.getSold() < needSell) {
                 System.out.printf("%s купил машину\n", Thread.currentThread().getName());
                 dealership.addSold();
                 return dealership.getCars().remove(0);
             } else {
-                System.out.println("Машин нет");
+                System.out.println("Продажа остановлена");
                 return null;
             }
 
