@@ -12,11 +12,11 @@ public class Seller {
         while (dealership.getSold() < needSell) {
             try {
                 synchronized (this) {
+                    dealership.getCars().add(new Car());
                     System.out.printf("%s выпустил 1 авто \n", Thread.currentThread().getName());
                     notify();
+                    Thread.sleep(WAIT_TIME);
                 }
-                Thread.sleep(WAIT_TIME);
-                dealership.getCars().add(new Car());
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
@@ -33,14 +33,14 @@ public class Seller {
             System.out.printf("%s зашел в салон\n", Thread.currentThread().getName());
             while (dealership.getCars().size() == 0 && !Thread.currentThread().isInterrupted() && dealership.getSold() < needSell) {
                 System.out.println("Машин нет");
-                wait(WAIT_TIME);
+                wait();
             }
-            if (dealership.getCars().size() > 0) {
+            if (dealership.getSold() < needSell) {
                 System.out.printf("%s купил машину\n", Thread.currentThread().getName());
                 dealership.addSold();
                 return dealership.getCars().remove(0);
             } else {
-                System.out.println("Машин нет");
+                System.out.println("Продажа остановлена");
                 return null;
             }
 
