@@ -24,5 +24,6 @@ public class Main {
             thread3.join();
             thread4.join();
         }
+        thread1.interrupt();
     }
 }

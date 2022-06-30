@@ -8,42 +8,30 @@ public class Seller {
     }
 
     public void receiveCar() {
-        int needSell = dealership.getNeedSell();
-        while (dealership.getSold() < needSell) {
+        while (!Thread.interrupted()) {
             try {
+                Thread.sleep(WAIT_TIME);
                 synchronized (this) {
                     dealership.getCars().add(new Car());
                     System.out.printf("%s выпустил 1 авто \n", Thread.currentThread().getName());
                     notify();
-                    Thread.sleep(WAIT_TIME);
                 }
             } catch (InterruptedException ex) {
-                ex.printStackTrace();
+                break;
             }
         }
     }
 
     public synchronized Car sellCar() {
-
         try {
-            if (Thread.currentThread().isInterrupted()) {
-                return null;
-            }
-            int needSell = dealership.getNeedSell();
             System.out.printf("%s зашел в салон\n", Thread.currentThread().getName());
-            while (dealership.getCars().size() == 0 && !Thread.currentThread().isInterrupted() && dealership.getSold() < needSell) {
+            while (dealership.getCars().size() == 0) {
                 System.out.println("Машин нет");
                 wait();
             }
-            if (dealership.getSold() < needSell) {
-                System.out.printf("%s купил машину\n", Thread.currentThread().getName());
-                dealership.addSold();
-                return dealership.getCars().remove(0);
-            } else {
-                System.out.println("Продажа остановлена");
-                return null;
-            }
-
+            System.out.printf("%s купил машину\n", Thread.currentThread().getName());
+            dealership.addSold();
+            return dealership.getCars().remove(0);
         } catch (InterruptedException e) {
             return null;
         }
